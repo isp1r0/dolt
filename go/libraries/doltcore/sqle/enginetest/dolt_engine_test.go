@@ -20,6 +20,7 @@ import (
 	"github.com/dolthub/go-mysql-server/enginetest"
 	"github.com/dolthub/go-mysql-server/sql"
 
+	"github.com/dolthub/dolt/go/libraries/doltcore/schema"
 	"github.com/dolthub/dolt/go/libraries/doltcore/sqle"
 )
 
@@ -28,6 +29,9 @@ func init() {
 }
 
 func TestQueries(t *testing.T) {
+	schema.FeatureFlagKeylessSchema = true
+	defer func() { schema.FeatureFlagKeylessSchema = true }()
+
 	enginetest.TestQueries(t, newDoltHarness(t))
 }
 

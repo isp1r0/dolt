@@ -33,8 +33,8 @@ type keylessTableReader struct {
 	sch  schema.Schema
 
 	// duplicates
-	row       sql.Row
-	remaining uint64
+	row        row.Row
+	duplicates uint64
 }
 
 var _ SqlTableReader = &keylessTableReader{}
@@ -45,8 +45,8 @@ func (rdr *keylessTableReader) GetSchema() schema.Schema {
 }
 
 // ReadSqlRow implements the SqlTableReader interface.
-func (rdr *keylessTableReader) ReadSqlRow(ctx context.Context) (sql.Row, error) {
-	if rdr.remaining == 0 {
+func (rdr *keylessTableReader) ReadRow(ctx context.Context) (row.Row, error) {
+	if rdr.duplicates == 0 {
 		key, val, err := rdr.iter.Next(ctx)
 		if err != nil {
 			return nil, err
@@ -54,15 +54,25 @@ func (rdr *keylessTableReader) ReadSqlRow(ctx context.Context) (sql.Row, error) 
 			return nil, io.EOF
 		}
 
-		rdr.row, rdr.remaining, err = row.DecodeKeylessSqlRow(rdr.sch, val.(types.Tuple))
+		rdr.row, rdr.duplicates, err = row.KeylessRowsFromTuples(key.(types.Tuple), val.(types.Tuple))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	rdr.remaining -= 1
+	rdr.duplicates -= 1
 
 	return rdr.row, nil
+}
+
+// ReadSqlRow implements the SqlTableReader interface.
+func (rdr *keylessTableReader) ReadSqlRow(ctx context.Context) (sql.Row, error) {
+	r, err := rdr.ReadRow(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return row.DoltRowToSqlRow(r, rdr.sch)
 }
 
 func newKeylessTableReader(ctx context.Context, tbl *doltdb.Table, sch schema.Schema, buffered bool) (SqlTableReader, error) {
@@ -99,12 +109,9 @@ func newKeylessTableReaderForPartition(ctx context.Context, tbl *doltdb.Table, s
 		return nil, err
 	}
 
-	return &partitionTableReader{
-		SqlTableReader: pkTableReader{
-			iter: iter,
-			sch:  sch,
-		},
-		remaining: end - start,
+	return &keylessTableReader{
+		iter: iter,
+		sch:  sch,
 	}, nil
 }
 
@@ -123,7 +130,7 @@ func newKeylessTableReaderFrom(ctx context.Context, tbl *doltdb.Table, sch schem
 		return nil, err
 	}
 
-	return pkTableReader{
+	return &keylessTableReader{
 		iter: iter,
 		sch:  sch,
 	}, nil
