@@ -30,7 +30,7 @@ func init() {
 
 func TestQueries(t *testing.T) {
 	schema.FeatureFlagKeylessSchema = true
-	defer func() { schema.FeatureFlagKeylessSchema = true }()
+	defer func() { schema.FeatureFlagKeylessSchema = false }()
 
 	enginetest.TestQueries(t, newDoltHarness(t))
 }
