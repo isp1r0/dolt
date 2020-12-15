@@ -74,13 +74,13 @@ func StageAllTables(ctx context.Context, ddb *doltdb.DoltDB, rsr env.RepoStateRe
 		return err
 	}
 
-	staged, err := rsr.StagedRoot(ctx)
+	staged, err := env.StagedRoot(ctx, ddb, rsr)
 
 	if err != nil {
 		return err
 	}
 
-	working, err := rsr.WorkingRoot(ctx)
+	working, err := env.WorkingRoot(ctx, ddb, rsr)
 
 	if err != nil {
 		return err

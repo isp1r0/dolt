@@ -402,18 +402,6 @@ func (r *repoStateReader) GetAllValidDocDetails() ([]doltdb.DocDetails, error) {
 	return r.dEnv.GetAllValidDocDetails()
 }
 
-func (r *repoStateReader) WorkingRoot(ctx context.Context) (*doltdb.RootValue, error) {
-	return r.dEnv.WorkingRoot(ctx)
-}
-
-func (r *repoStateReader) HeadRoot(ctx context.Context) (*doltdb.RootValue, error) {
-	return r.dEnv.HeadRoot(ctx)
-}
-
-func (r *repoStateReader) StagedRoot(ctx context.Context) (*doltdb.RootValue, error) {
-	return r.dEnv.StagedRoot(ctx)
-}
-
 func (dEnv *DoltEnv) RepoStateReader() RepoStateReader {
 	return &repoStateReader{dEnv}
 }
