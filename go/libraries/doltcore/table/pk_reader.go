@@ -63,7 +63,7 @@ func (rdr pkTableReader) ReadSqlRow(ctx context.Context) (sql.Row, error) {
 		return nil, io.EOF
 	}
 
-	return row.SqlRowFromTuples(rdr.sch, key.(types.Tuple), val.(types.Tuple))
+	return noms.SqlRowFromTuples(rdr.sch, key.(types.Tuple), val.(types.Tuple))
 }
 
 func newPkTableReader(ctx context.Context, tbl *doltdb.Table, sch schema.Schema, buffered bool) (SqlTableReader, error) {
