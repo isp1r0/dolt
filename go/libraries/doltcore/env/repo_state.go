@@ -37,17 +37,17 @@ type RepoStateReader interface {
 	StagedRoot(ctx context.Context) (*doltdb.RootValue, error)
 }
 
-type RepoStateWriter interface {
-	// SetCWBHeadRef(context.Context, ref.DoltRef) error
-	// SetCWBHeadSpec(context.Context, *doltdb.CommitSpec) error
-	SetStagedHash(context.Context, hash.Hash) error
-	SetWorkingHash(context.Context, hash.Hash) error
-	UpdateStagedRoot(ctx context.Context, newRoot *doltdb.RootValue) (hash.Hash, error)
-	ClearMerge() error
-	UpdateWorkingRoot(ctx context.Context, newRoot *doltdb.RootValue) error
-	PutDocsToWorking(ctx context.Context, docDetails []doltdb.DocDetails) error
-	ResetWorkingDocsToStagedDos(ctx context.Context) error
-}
+//type GetRepoStateWriter interface {
+//	// SetCWBHeadRef(context.Context, ref.DoltRef) error
+//	// SetCWBHeadSpec(context.Context, *doltdb.CommitSpec) error
+//	SetStagedHash(context.Context, hash.Hash) error
+//	SetWorkingHash(context.Context, hash.Hash) error
+//	UpdateStagedRoot(ctx context.Context, newRoot *doltdb.RootValue) (hash.Hash, error)
+//	ClearMerge() error
+//	UpdateWorkingRoot(ctx context.Context, newRoot *doltdb.RootValue) error
+//	PutDocsToWorking(ctx context.Context, docDetails []doltdb.DocDetails) error
+//	ResetWorkingDocsToStagedDos(ctx context.Context) error
+//}
 
 type BranchConfig struct {
 	Merge  ref.MarshalableRef `json:"head"`
@@ -68,6 +68,11 @@ type RepoState struct {
 	Branches map[string]BranchConfig `json:"branches"`
 }
 
+type RepoStateWriter struct {
+	fs filesys.Filesys
+	RepoState *RepoState
+}
+
 func LoadRepoState(fs filesys.ReadWriteFS) (*RepoState, error) {
 	path := getRepoStateFile()
 	data, err := fs.ReadFile(path)
@@ -84,6 +89,10 @@ func LoadRepoState(fs filesys.ReadWriteFS) (*RepoState, error) {
 	}
 
 	return &repoState, nil
+}
+
+func LoadRepoStateWriter(fs filesys.Filesys, rs *RepoState) *RepoStateWriter {
+	return &RepoStateWriter{fs: fs, RepoState: rs}
 }
 
 func CloneRepoState(fs filesys.ReadWriteFS, r Remote) (*RepoState, error) {
@@ -188,3 +197,95 @@ func (rs *RepoState) IsMergeActive() bool {
 func (rs *RepoState) GetMergeCommit() string {
 	return rs.Merge.Commit
 }
+
+func (r *RepoStateWriter) SetStagedHash(h hash.Hash) error {
+	r.RepoState.Staged = h.String()
+	err := r.RepoState.Save(r.fs)
+
+	if err != nil {
+		return ErrStateUpdate
+	}
+
+	return nil
+}
+
+func (r *RepoStateWriter) SetWorkingHash(h hash.Hash) error {
+	r.RepoState.Working = h.String()
+	err := r.RepoState.Save(r.fs)
+
+	if err != nil {
+		return ErrStateUpdate
+	}
+
+	return nil
+}
+
+func (r *RepoStateWriter) ClearMerge() error {
+	r.RepoState.Merge = nil
+	return r.RepoState.Save(r.fs)
+}
+
+// TODO:
+func (r *RepoStateWriter) PutDocsToWorking(ctx context.Context, docDetails []doltdb.DocDetails) error {
+	return nil
+}
+
+// TODO:
+func (r *RepoStateWriter) ResetWorkingDocsToStagedDos(ctx context.Context) error {
+	return nil
+}
+
+func UpdateStagedRoot(ctx context.Context, ddb *doltdb.DoltDB, rsw *RepoStateWriter, newRoot *doltdb.RootValue) (hash.Hash, error) {
+	h, err := ddb.WriteRootValue(ctx, newRoot)
+
+	if err != nil {
+		return hash.Hash{}, doltdb.ErrNomsIO
+	}
+
+	rsw.SetStagedHash(h)
+
+	if err != nil {
+		return hash.Hash{}, ErrStateUpdate
+	}
+
+	return h, nil
+}
+
+func UpdateWorkingRoot(ctx context.Context, ddb *doltdb.DoltDB, rsw *RepoStateWriter, newRoot *doltdb.RootValue) (hash.Hash, error) {
+	h, err := ddb.WriteRootValue(ctx, newRoot)
+
+	if err != nil {
+		return hash.Hash{}, doltdb.ErrNomsIO
+	}
+
+	rsw.SetWorkingHash(h)
+
+	if err != nil {
+		return hash.Hash{}, ErrStateUpdate
+	}
+
+	return h, nil
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

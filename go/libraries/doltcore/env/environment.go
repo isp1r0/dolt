@@ -67,6 +67,7 @@ type DoltEnv struct {
 	CfgLoadErr error
 
 	RepoState *RepoState
+	RepoStateWriter *RepoStateWriter
 	RSLoadErr error
 
 	Docs        Docs
@@ -84,6 +85,7 @@ type DoltEnv struct {
 func Load(ctx context.Context, hdp HomeDirProvider, fs filesys.Filesys, urlStr, version string) *DoltEnv {
 	config, cfgErr := loadDoltCliConfig(hdp, fs)
 	repoState, rsErr := LoadRepoState(fs)
+	repoStateWriter := LoadRepoStateWriter(fs, repoState)
 	docs, docsErr := LoadDocs(fs)
 	ddb, dbLoadErr := doltdb.LoadDoltDB(ctx, types.Format_Default, urlStr)
 
@@ -92,6 +94,7 @@ func Load(ctx context.Context, hdp HomeDirProvider, fs filesys.Filesys, urlStr, 
 		config,
 		cfgErr,
 		repoState,
+		repoStateWriter,
 		rsErr,
 		docs,
 		docsErr,
@@ -364,7 +367,7 @@ func (dEnv *DoltEnv) UpdateWorkingRoot(ctx context.Context, newRoot *doltdb.Root
 		return doltdb.ErrNomsIO
 	}
 
-	return dEnv.RepoStateWriter().SetWorkingHash(ctx, h)
+	return dEnv.GetRepoStateWriter().SetWorkingHash(h)
 }
 
 type repoStateReader struct {
@@ -415,54 +418,8 @@ func (dEnv *DoltEnv) RepoStateReader() RepoStateReader {
 	return &repoStateReader{dEnv}
 }
 
-type repoStateWriter struct {
-	dEnv *DoltEnv
-}
-
-func (r *repoStateWriter) SetStagedHash(ctx context.Context, h hash.Hash) error {
-	r.dEnv.RepoState.Staged = h.String()
-	err := r.dEnv.RepoState.Save(r.dEnv.FS)
-
-	if err != nil {
-		return ErrStateUpdate
-	}
-
-	return nil
-}
-
-func (r *repoStateWriter) SetWorkingHash(ctx context.Context, h hash.Hash) error {
-	r.dEnv.RepoState.Working = h.String()
-	err := r.dEnv.RepoState.Save(r.dEnv.FS)
-
-	if err != nil {
-		return ErrStateUpdate
-	}
-
-	return nil
-}
-
-func (r *repoStateWriter) UpdateStagedRoot(ctx context.Context, newRoot *doltdb.RootValue) (hash.Hash, error) {
-	return r.dEnv.UpdateStagedRoot(ctx, newRoot)
-}
-
-func (r *repoStateWriter) UpdateWorkingRoot(ctx context.Context, newRoot *doltdb.RootValue) error {
-	return r.dEnv.UpdateWorkingRoot(ctx, newRoot)
-}
-
-func (r *repoStateWriter) ClearMerge() error {
-	return r.dEnv.RepoState.ClearMerge(r.dEnv.FS)
-}
-
-func (r *repoStateWriter) PutDocsToWorking(ctx context.Context, docDetails []doltdb.DocDetails) error {
-	return r.dEnv.PutDocsToWorking(ctx, docDetails)
-}
-
-func (r *repoStateWriter) ResetWorkingDocsToStagedDos(ctx context.Context) error {
-	return r.dEnv.ResetWorkingDocsToStagedDocs(ctx)
-}
-
-func (dEnv *DoltEnv) RepoStateWriter() RepoStateWriter {
-	return &repoStateWriter{dEnv}
+func (dEnv *DoltEnv) GetRepoStateWriter() *RepoStateWriter {
+	return dEnv.RepoStateWriter
 }
 
 func (dEnv *DoltEnv) HeadRoot(ctx context.Context) (*doltdb.RootValue, error) {

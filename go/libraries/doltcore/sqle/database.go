@@ -136,7 +136,7 @@ type Database struct {
 	name      string
 	ddb       *doltdb.DoltDB
 	rsr       env.RepoStateReader
-	rsw       env.RepoStateWriter
+	rsw       *env.RepoStateWriter
 	batchMode commitBehavior
 	tc        *tableCache
 }
@@ -149,7 +149,7 @@ var _ sql.TableRenamer = Database{}
 var _ sql.TriggerDatabase = Database{}
 
 // NewDatabase returns a new dolt database to use in queries.
-func NewDatabase(name string, ddb *doltdb.DoltDB, rsr env.RepoStateReader, rsw env.RepoStateWriter) Database {
+func NewDatabase(name string, ddb *doltdb.DoltDB, rsr env.RepoStateReader, rsw *env.RepoStateWriter) Database {
 	return Database{
 		name:      name,
 		ddb:       ddb,
@@ -162,7 +162,7 @@ func NewDatabase(name string, ddb *doltdb.DoltDB, rsr env.RepoStateReader, rsw e
 
 // NewBatchedDatabase returns a new dolt database executing in batch insert mode. Integrators must call Flush() to
 // commit any outstanding edits.
-func NewBatchedDatabase(name string, ddb *doltdb.DoltDB, rsr env.RepoStateReader, rsw env.RepoStateWriter) Database {
+func NewBatchedDatabase(name string, ddb *doltdb.DoltDB, rsr env.RepoStateReader, rsw *env.RepoStateWriter) Database {
 	return Database{
 		name:      name,
 		ddb:       ddb,
@@ -188,8 +188,8 @@ func (db Database) GetStateReader() env.RepoStateReader {
 	return db.rsr
 }
 
-// GetStateWriter gets the RepoStateWriter for a Database
-func (db Database) GetStateWriter() env.RepoStateWriter {
+// GetStateWriter gets the GetRepoStateWriter for a Database
+func (db Database) GetStateWriter() *env.RepoStateWriter {
 	return db.rsw
 }
 

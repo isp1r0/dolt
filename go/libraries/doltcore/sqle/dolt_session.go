@@ -33,7 +33,7 @@ type dbRoot struct {
 
 type dbData struct {
 	ddb *doltdb.DoltDB
-	rsw env.RepoStateWriter
+	rsw *env.RepoStateWriter
 	rsr env.RepoStateReader
 }
 
@@ -109,7 +109,7 @@ func (sess *DoltSession) CommitTransaction(ctx *sql.Context) error {
 		return err
 	}
 
-	return dbData.rsw.SetWorkingHash(ctx, h)
+	return dbData.rsw.SetWorkingHash(h)
 }
 
 // GetDoltDB returns the *DoltDB for a given database by name
@@ -123,7 +123,7 @@ func (sess *DoltSession) GetDoltDB(dbName string) (*doltdb.DoltDB, bool) {
 	return d.ddb, true
 }
 
-func (sess *DoltSession) GetDoltDBRepoStateWriter(dbName string) (env.RepoStateWriter, bool) {
+func (sess *DoltSession) GetDoltDBRepoStateWriter(dbName string) (*env.RepoStateWriter, bool) {
 	d, ok := sess.dbDatas[dbName]
 
 	if !ok {

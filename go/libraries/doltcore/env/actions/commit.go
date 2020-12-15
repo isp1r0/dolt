@@ -62,7 +62,8 @@ func GetNameAndEmail(cfg config.ReadableConfig) (string, string, error) {
 }
 
 // CommitStaged adds a new commit to HEAD with the given props. Returns the new commit's hash as a string and an error.
-func CommitStaged(ctx context.Context, ddb *doltdb.DoltDB, rsr env.RepoStateReader, rsw env.RepoStateWriter, props CommitStagedProps) (string, error) {
+// TODO: Change method head.
+func CommitStaged(ctx context.Context, ddb *doltdb.DoltDB, rsr env.RepoStateReader, rsw *env.RepoStateWriter, props CommitStagedProps) (string, error) {
 	if props.Message == "" {
 		return "", ErrEmptyCommitMessage
 	}
@@ -131,7 +132,7 @@ func CommitStaged(ctx context.Context, ddb *doltdb.DoltDB, rsr env.RepoStateRead
 		}
 	}
 
-	h, err := rsw.UpdateStagedRoot(ctx, srt)
+	h, err := env.UpdateStagedRoot(ctx, ddb, rsw, srt)
 
 	if err != nil {
 		return "", err
@@ -149,7 +150,7 @@ func CommitStaged(ctx context.Context, ddb *doltdb.DoltDB, rsr env.RepoStateRead
 		return "", err
 	}
 
-	err = rsw.UpdateWorkingRoot(ctx, wrt)
+	_, err = env.UpdateWorkingRoot(ctx, ddb, rsw, wrt)
 
 	if err != nil {
 		return "", err

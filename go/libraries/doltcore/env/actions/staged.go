@@ -43,7 +43,7 @@ func StageTables(ctx context.Context, dEnv *env.DoltEnv, tbls []string) error {
 		return err
 	}
 
-	err = stageTables(ctx, dEnv.DoltDB, dEnv.RepoStateWriter(), tables, staged, working)
+	err = stageTables(ctx, dEnv.DoltDB, dEnv.GetRepoStateWriter(), tables, staged, working)
 	if err != nil {
 		dEnv.ResetWorkingDocsToStagedDocs(ctx)
 		return err
@@ -67,7 +67,7 @@ func GetTblsAndDocDetails(dEnv *env.DoltEnv, tbls []string) (tables []string, do
 	return tbls, docDetails, nil
 }
 
-func StageAllTables(ctx context.Context, ddb *doltdb.DoltDB, rsr env.RepoStateReader, rsw env.RepoStateWriter) error {
+func StageAllTables(ctx context.Context, ddb *doltdb.DoltDB, rsr env.RepoStateReader, rsw *env.RepoStateWriter) error {
 	err := rsw.PutDocsToWorking(ctx, nil)
 
 	if err != nil {
@@ -101,7 +101,7 @@ func StageAllTables(ctx context.Context, ddb *doltdb.DoltDB, rsr env.RepoStateRe
 	return nil
 }
 
-func stageTables(ctx context.Context, db *doltdb.DoltDB, rsw env.RepoStateWriter, tbls []string, staged *doltdb.RootValue, working *doltdb.RootValue) error {
+func stageTables(ctx context.Context, db *doltdb.DoltDB, rsw *env.RepoStateWriter, tbls []string, staged *doltdb.RootValue, working *doltdb.RootValue) error {
 	err := ValidateTables(ctx, tbls, staged, working)
 	if err != nil {
 		return err
@@ -117,9 +117,9 @@ func stageTables(ctx context.Context, db *doltdb.DoltDB, rsw env.RepoStateWriter
 		return err
 	}
 
-	if err := rsw.UpdateWorkingRoot(ctx, working); err == nil {
+	if _, err := env.UpdateWorkingRoot(ctx, db, rsw, working); err == nil {
 		if sh, err := db.WriteRootValue(ctx, staged); err == nil {
-			err = rsw.SetStagedHash(ctx, sh)
+			err = rsw.SetStagedHash(sh)
 
 			if err != nil {
 				return env.ErrStateUpdate

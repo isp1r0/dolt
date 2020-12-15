@@ -57,7 +57,7 @@ func (d DoltCommitFunc) Eval(ctx *sql.Context, row sql.Row) (interface{}, error)
 	rsw, ok := dSess.GetDoltDBRepoStateWriter(dbName)
 
 	if !ok {
-		return nil, fmt.Errorf("Could not load the %s RepoStateWriter", dbName)
+		return nil, fmt.Errorf("Could not load the %s GetRepoStateWriter", dbName)
 	}
 
 	ap := cli.CreateCommitArgParser()
