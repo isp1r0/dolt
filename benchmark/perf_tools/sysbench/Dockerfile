@@ -1,4 +1,4 @@
-FROM python:3.8.6-slim-buster
+FROM python:rc-slim-buster
 
 # Get sysbench installed
 RUN apt update
